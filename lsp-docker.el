@@ -312,6 +312,11 @@ such that multiple containers can be used."
   (let ((lsp-server-info (gethash 'server config)))
     (gethash 'launch_command lsp-server-info)))
 
+(defun lsp-docker-get-priority (config)
+  "Get the server priority"
+  (let ((lsp-server-info (gethash 'server config)))
+    (gethash 'priority lsp-server-info lsp-docker-default-priority)))
+
 (defun lsp-docker-check-server-type-subtype (supported-server-types-subtypes server-type-subtype)
   "Verify that the combination of server (type . subtype) is supported by the current implementation"
   (if (not server-type-subtype)
@@ -405,7 +410,8 @@ Argument DOCKER-CONTAINER-NAME name to use for container."
              (path-mappings (lsp-docker-get-path-mappings config))
              (regular-server-id (lsp-docker-get-server-id config))
              (server-id (lsp-docker-generate-docker-server-id config (lsp-workspace-root)))
-             (server-launch-command (lsp-docker-get-launch-command config)))
+             (server-launch-command (lsp-docker-get-launch-command config))
+             (server-priority (lsp-docker-get-priority config)))
         (if (and (lsp-docker-check-server-type-subtype lsp-docker-supported-server-types-subtypes server-type-subtype)
                  (lsp-docker-check-path-mappings path-mappings))
             (let ((container-type (car server-type-subtype))
@@ -420,7 +426,7 @@ Argument DOCKER-CONTAINER-NAME name to use for container."
                                       :docker-container-name server-container-name
                                       :docker-container-name-suffix nil
                                       :activation-fn (lsp-docker-create-activation-function-by-project-dir (lsp-workspace-root))
-                                      :priority lsp-docker-default-priority
+                                      :priority server-priority
                                       :server-command server-launch-command
                                       :launch-server-cmd-fn #'lsp-docker-launch-new-container))
                              ('container (lsp-docker-register-client-with-activation-fn
@@ -431,7 +437,7 @@ Argument DOCKER-CONTAINER-NAME name to use for container."
                                           :docker-container-name server-container-name
                                           :docker-container-name-suffix nil
                                           :activation-fn (lsp-docker-create-activation-function-by-project-dir (lsp-workspace-root))
-                                          :priority lsp-docker-default-priority
+                                          :priority server-priority
                                           :server-command server-launch-command
                                           :launch-server-cmd-fn #'lsp-docker-launch-existing-container))))))
           (user-error "Invalid LSP docker config: unsupported server type and/or subtype")))
